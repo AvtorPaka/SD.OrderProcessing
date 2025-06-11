@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SD.OrderProcessing.Orders.Api", "src\SD.OrderProcessing.Orders.Api\SD.OrderProcessing.Orders.Api.csproj", "{1FAA9364-52A6-48E6-A3F7-D5AA3F2CD338}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SD.OrderProcessing.Orders.Domain", "src\SD.OrderProcessing.Orders.Domain\SD.OrderProcessing.Orders.Domain.csproj", "{2C8BDCA3-AFC4-43A4-B3E9-7FD77B63D7D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SD.OrderProcessing.Orders.Infrastructure", "src\SD.OrderProcessing.Orders.Infrastructure\SD.OrderProcessing.Orders.Infrastructure.csproj", "{8921B56F-295B-484F-AB16-806DC52123D1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1FAA9364-52A6-48E6-A3F7-D5AA3F2CD338}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FAA9364-52A6-48E6-A3F7-D5AA3F2CD338}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FAA9364-52A6-48E6-A3F7-D5AA3F2CD338}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FAA9364-52A6-48E6-A3F7-D5AA3F2CD338}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C8BDCA3-AFC4-43A4-B3E9-7FD77B63D7D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C8BDCA3-AFC4-43A4-B3E9-7FD77B63D7D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C8BDCA3-AFC4-43A4-B3E9-7FD77B63D7D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C8BDCA3-AFC4-43A4-B3E9-7FD77B63D7D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8921B56F-295B-484F-AB16-806DC52123D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8921B56F-295B-484F-AB16-806DC52123D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8921B56F-295B-484F-AB16-806DC52123D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8921B56F-295B-484F-AB16-806DC52123D1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

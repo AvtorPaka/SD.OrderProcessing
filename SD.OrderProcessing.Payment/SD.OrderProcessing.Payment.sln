@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SD.OrderProcessing.Payment.Api", "src\SD.OrderProcessing.Payment.Api\SD.OrderProcessing.Payment.Api.csproj", "{E97B8A5F-25DF-43A9-B521-90E08D98F478}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SD.OrderProcessing.Payment.Domain", "src\SD.OrderProcessing.Payment.Domain\SD.OrderProcessing.Payment.Domain.csproj", "{FEC1FD52-2F52-4617-8F77-288074536916}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SD.OrderProcessing.Payment.Infrastructure", "src\SD.OrderProcessing.Payment.Infrastructure\SD.OrderProcessing.Payment.Infrastructure.csproj", "{86B6C027-62AB-47D7-B4D8-C5F65D1770BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E97B8A5F-25DF-43A9-B521-90E08D98F478}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E97B8A5F-25DF-43A9-B521-90E08D98F478}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E97B8A5F-25DF-43A9-B521-90E08D98F478}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E97B8A5F-25DF-43A9-B521-90E08D98F478}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEC1FD52-2F52-4617-8F77-288074536916}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEC1FD52-2F52-4617-8F77-288074536916}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEC1FD52-2F52-4617-8F77-288074536916}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEC1FD52-2F52-4617-8F77-288074536916}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86B6C027-62AB-47D7-B4D8-C5F65D1770BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86B6C027-62AB-47D7-B4D8-C5F65D1770BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86B6C027-62AB-47D7-B4D8-C5F65D1770BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86B6C027-62AB-47D7-B4D8-C5F65D1770BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
