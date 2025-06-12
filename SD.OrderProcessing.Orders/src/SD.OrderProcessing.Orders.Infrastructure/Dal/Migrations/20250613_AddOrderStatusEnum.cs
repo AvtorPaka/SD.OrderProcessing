@@ -14,8 +14,8 @@ DO
             CREATE TYPE order_status_enum as ENUM
             (
                 'failed',
-                'balancenotexists',
-                'insufficientfunds',
+                'balance_not_exists',
+                'insufficient_funds',
                 'pending',
                 'finished'
             );

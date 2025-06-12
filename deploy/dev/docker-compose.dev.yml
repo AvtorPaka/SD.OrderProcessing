@@ -22,6 +22,7 @@ services:
       - ${SD_OP_ORD_PORT}:7077
     depends_on:
       - sd_op_db
+      - sd_op_rmq
       - sd_op_api_gateway
 
   sd_op_payment_api:
@@ -46,6 +47,7 @@ services:
       - ${SD_OP_PAY_PORT}:7070
     depends_on:
       - sd_op_db
+      - sd_op_rmq
       - sd_op_api_gateway
 
   sd_op_api_gateway:
@@ -59,6 +61,22 @@ services:
       - ORDERS_API_URL=${SD_OP_O_URL}
     ports:
       - ${SD_OP_GATEWAY_PORT}:80
+    networks:
+      - sd-op-network
+
+  sd_op_rmq:
+    image: rabbitmq:4.1-management-alpine
+    container_name: sd-op-rmq
+    restart: always
+    volumes:
+      - sd-op-rmq-data:/var/lib/rabbitmq
+      - sd-op-rmq-log-data:/var/log/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RMQ_PSWD}
+    ports:
+      - 5672:5672
+      - 15672:15672
     networks:
       - sd-op-network
     
@@ -83,6 +101,10 @@ services:
         
 volumes:
   sd-op-pg-data:
+    driver: local
+  sd-op-rmq-data:
+    driver: local
+  sd-op-rmq-log-data:
     driver: local
 
 

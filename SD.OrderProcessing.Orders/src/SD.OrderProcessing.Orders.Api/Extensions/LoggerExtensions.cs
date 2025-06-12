@@ -24,11 +24,98 @@ public static partial class LoggerExtensions
         DateTime curTime,
         string callId,
         string endpointRoute);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2002,
+        Message = "[{CurTime}] Order Payment messages producer start executing."
+    )]
+    public static partial void LogPaymentMessagesProducerStart(this ILogger logger,
+        DateTime curTime);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2003,
+        Message = "[{CurTime}] Order Payment messages producer stopped executing."
+    )]
+    public static partial void LogPaymentMessagesProducerEnd(this ILogger logger,
+        DateTime curTime);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2004,
+        Message = "[{CurTime}] Order Payment messages producer RabbitMQ connection initialized."
+    )]
+    public static partial void LogProducerMqConnectionInitialized(this ILogger logger,
+        DateTime curTime);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2005,
+        Message = "[{CurTime}] Order Payment messages producer start processing {MessagesAmount} messages."
+    )]
+    public static partial void LogPaymentMessagesProducerStartProcessing(this ILogger logger,
+        DateTime curTime,
+        int messagesAmount);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2006,
+        Message = "[{CurTime}] Order Payment messages producer ended processing {MessagesAmount} messages."
+    )]
+    public static partial void LogPaymentMessagesProducerEndProcessing(this ILogger logger,
+        DateTime curTime,
+        int messagesAmount);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2007,
+        Message = "[{CurTime}] Payment status messages consumer RabbitMQ connection initialized."
+    )]
+    public static partial void LogConsumerMqConnectionInitialized(this ILogger logger,
+        DateTime curTime);
+    
+    [LoggerMessage(
+        LogLevel.Information,
+        EventId = 2008,
+        Message = "[{CurTime}] Payment status messages consumer stopped executing."
+    )]
+    public static partial void LogPaymentStatusConsumerEnd(this ILogger logger,
+        DateTime curTime);
 
     #endregion
 
     #region Error
+    
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        EventId = 4004,
+        Message = "[{CurTime}] Unexpected exception occured during order payment messages processing."
+    )]
+    public static partial void LogPaymentMessagesProducesUnexpectedException(this ILogger logger,
+        Exception exception,
+        DateTime curTime);
+    
 
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        EventId = 4005,
+        Message = "[{CurTime}] Unexpected exception occured during order payment message publish with id: {messageId}"
+    )]
+    public static partial void LogPaymentMessagesProducerInvalidPublish(this ILogger logger,
+        Exception exception,
+        DateTime curTime,
+        long messageId);
+    
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        EventId = 4006,
+        Message = "[{CurTime}] Unexpected exception occured during order payment status message processing"
+    )]
+    public static partial void LogPaymentStatusConsumerUnexpectedException(this ILogger logger,
+        Exception exception,
+        DateTime curTime);
+    
     [LoggerMessage(
         Level = LogLevel.Error,
         EventId = 4000,

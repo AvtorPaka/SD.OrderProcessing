@@ -34,11 +34,20 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddInfrastructureConfiguration(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<RabbitMqConnectionOptions>(
+            configuration.GetSection($"Infrastructure:ISC:{nameof(RabbitMqConnectionOptions)}"));
+
+        return services;
+    }
+
     public static IServiceCollection AddDalRepositories(this IServiceCollection services)
     {
         services.AddScoped<IOrdersRepository, OrdersRepository>();
         services.AddScoped<IOrderPaymentMessagesRepository, OrderPaymentMessagesRepository>();
-        
+
         return services;
     }
 }

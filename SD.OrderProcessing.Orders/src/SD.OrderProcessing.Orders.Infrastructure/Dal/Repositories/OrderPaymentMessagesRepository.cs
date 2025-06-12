@@ -48,7 +48,7 @@ INSERT INTO order_payment_messages (order_id, user_id, created_at, amount)
         }
     }
 
-    public async Task<IReadOnlyList<OrderPaymentMessageEntity>> GetPriorPendingMessagesToPublishAndUpdate(uint limit,
+    public async Task<IReadOnlyList<OrderPaymentMessageEntity>> GetPriorPendingMessagesToPublishAndUpdate(int limit,
         CancellationToken cancellationToken)
     {
         const string sqlQuery = @"

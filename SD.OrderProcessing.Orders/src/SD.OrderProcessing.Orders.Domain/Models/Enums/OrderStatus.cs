@@ -3,8 +3,8 @@ namespace SD.OrderProcessing.Orders.Domain.Models.Enums;
 public enum OrderStatus
 {
     Failed,
-    BalanceNotExists,
-    InsufficientFunds,
+    Balance_Not_Exists,
+    Insufficient_Funds,
     Pending,
     Finished
 }
