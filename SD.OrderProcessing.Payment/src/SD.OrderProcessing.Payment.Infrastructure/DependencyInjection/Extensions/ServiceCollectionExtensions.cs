@@ -1,0 +1,43 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using SD.OrderProcessing.Payment.Domain.Contracts.Dal.Interfaces;
+using SD.OrderProcessing.Payment.Infrastructure.Configuration.Options;
+using SD.OrderProcessing.Payment.Infrastructure.Dal.Infrastructure;
+using SD.OrderProcessing.Payment.Infrastructure.Dal.Repositories;
+
+namespace SD.OrderProcessing.Payment.Infrastructure.DependencyInjection.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddDalInfrastructure(this IServiceCollection services,
+        IConfiguration configuration,
+        bool isDevelopment)
+    {
+        var postgreConnectionSection =
+            configuration.GetSection($"Infrastructure:Dal:{nameof(PostgreConnectionOptions)}");
+
+        PostgreConnectionOptions pgConnectionOptions = postgreConnectionSection.Get<PostgreConnectionOptions>() ??
+                                                       throw new ArgumentException(
+                                                           "PostgreSQL connection options are missing");
+
+        Postgres.ConfigureTypeMapOptions();
+        Postgres.AddDataSource(
+            services: services,
+            connectionOptions: pgConnectionOptions,
+            isDevelopment: isDevelopment
+        );
+        Postgres.AddMigrations(
+            services: services,
+            connectionOptions: pgConnectionOptions
+            );
+
+        return services;
+    }
+
+    public static IServiceCollection AddDalRepositories(this IServiceCollection services)
+    {
+        services.AddScoped<IBalanceAccountRepository, BalanceAccountRepository>();
+        
+        return services;
+    }
+}
