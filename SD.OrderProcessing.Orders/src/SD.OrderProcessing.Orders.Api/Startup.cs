@@ -1,5 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SD.OrderProcessing.Orders.Api.Extensions;
+using SD.OrderProcessing.Orders.Api.Filters;
+using SD.OrderProcessing.Orders.Api.Middleware;
+using SD.OrderProcessing.Orders.Domain.DependencyInjection.Extensions;
+using SD.OrderProcessing.Orders.Infrastructure.DependencyInjection.Extensions;
 
 namespace SD.OrderProcessing.Orders.Api;
 
@@ -17,6 +22,13 @@ internal sealed class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services
+            .AddGlobalFilters()
+            .AddDomainServices()
+            .AddDalInfrastructure(
+                configuration: _configuration,
+                isDevelopment: _hostEnvironment.IsDevelopment()
+            )
+            .AddDalRepositories()
             .AddControllers()
             .AddJsonOptions(options =>
             {
@@ -25,14 +37,16 @@ internal sealed class Startup
             })
             .AddMvcOptions(options =>
             {
-                // options.Filters.Add()
+                options.Filters.Add<ExceptionFilter>();
             });
     }
 
     public void Configure(IApplicationBuilder app)
     {
+        app.UseMiddleware<TracingMiddleware>();
         app.UseRouting();
 
+        app.UseMiddleware<LoggingMiddleware>();
 
         app.UseEndpoints(builder =>
         {

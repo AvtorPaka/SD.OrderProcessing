@@ -1,4 +1,5 @@
 using System.Net;
+using SD.OrderProcessing.Orders.Infrastructure.DependencyInjection.Extensions;
 
 namespace SD.OrderProcessing.Orders.Api;
 
@@ -18,6 +19,7 @@ public sealed class Program
 
         await hostBuilder
             .Build()
+            .MigrateUp()
             .RunAsync();
     }
 }
