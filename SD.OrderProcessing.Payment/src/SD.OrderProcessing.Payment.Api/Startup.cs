@@ -23,8 +23,11 @@ internal sealed class Startup
     {
         services
             .AddGlobalFilters()
+            .AddMessageQueueWorkers()
             .AddDomainServices()
-            .AddBackgroundServices()
+            .AddInfrastructureConfiguration(
+                configuration: _configuration
+            )
             .AddDalInfrastructure(
                 configuration: _configuration,
                 isDevelopment: _hostEnvironment.IsDevelopment()

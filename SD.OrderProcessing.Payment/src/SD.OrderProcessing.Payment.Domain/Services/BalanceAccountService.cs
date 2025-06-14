@@ -3,6 +3,7 @@ using SD.OrderProcessing.Payment.Domain.Contracts.Dal.Interfaces;
 using SD.OrderProcessing.Payment.Domain.Exceptions.Domain.BalanceAccount;
 using SD.OrderProcessing.Payment.Domain.Exceptions.Infrastructure.Dal;
 using SD.OrderProcessing.Payment.Domain.Models;
+using SD.OrderProcessing.Payment.Domain.Models.Enums;
 using SD.OrderProcessing.Payment.Domain.Services.Interfaces;
 
 namespace SD.OrderProcessing.Payment.Domain.Services;
@@ -10,10 +11,18 @@ namespace SD.OrderProcessing.Payment.Domain.Services;
 public class BalanceAccountService : IBalanceAccountsService
 {
     private readonly IBalanceAccountRepository _balanceAccountRepository;
+    private readonly IBalanceWithdrawUpdatesRepository _balanceWithdrawUpdatesRepository;
+    private readonly IPaymentStatusMessagesRepository _paymentStatusMessagesRepository;
 
-    public BalanceAccountService(IBalanceAccountRepository balanceAccountRepository)
+    public BalanceAccountService(
+        IBalanceAccountRepository balanceAccountRepository,
+        IBalanceWithdrawUpdatesRepository balanceWithdrawUpdatesRepository,
+        IPaymentStatusMessagesRepository paymentStatusMessagesRepository
+    )
     {
         _balanceAccountRepository = balanceAccountRepository;
+        _balanceWithdrawUpdatesRepository = balanceWithdrawUpdatesRepository;
+        _paymentStatusMessagesRepository = paymentStatusMessagesRepository;
     }
 
     public async Task<BalanceAccountModel> CreateNew(long userId, CancellationToken cancellationToken)
@@ -86,7 +95,93 @@ public class BalanceAccountService : IBalanceAccountsService
             );
         }
 
+        using var transaction = _balanceAccountRepository.CreateTransactionScope();
+
         await UpdateBalance(userId, depositSum, cancellation);
+
+        transaction.Complete();
+    }
+
+    public async Task ProcessPaymentOperations(int limit, CancellationToken cancellationToken)
+    {
+        if (limit <= 0)
+        {
+            throw new ArgumentException($"Invalid limit parameter: {limit} for withdraw operations processing");
+        }
+
+        IReadOnlyList<BalanceWithdrawUpdateEntity> withdrawOperations =
+            await _balanceWithdrawUpdatesRepository.GetPriorPendingOperationsToUpdate(
+                limit: limit,
+                cancellationToken: cancellationToken
+            );
+
+        if (withdrawOperations.Count == 0)
+        {
+            return;
+        }
+        
+        using var transaction = _balanceWithdrawUpdatesRepository.CreateTransactionScope();
+        
+        List<PaymentStatusMessageEntity> paymentStatusMessages = [];
+
+        foreach (var withdraw in withdrawOperations)
+        {
+            OrderStatus paymentStatus = await ProcessWithdraw(
+                userId: withdraw.UserId,
+                sum: withdraw.Amount,
+                cancellationToken: cancellationToken
+            );
+
+            paymentStatusMessages.Add(new PaymentStatusMessageEntity
+            {
+                OrderId = withdraw.OrderId,
+                OrderStatus = paymentStatus,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+
+
+        await _paymentStatusMessagesRepository.Create(
+            entities: paymentStatusMessages.ToArray(),
+            cancellationToken: cancellationToken
+        );
+
+        await _balanceWithdrawUpdatesRepository.MarkOperationsDone(
+            operationIds: withdrawOperations.Select(e => e.Id).ToArray(),
+            cancellationToken: cancellationToken
+        );
+
+        transaction.Complete();
+    }
+    
+    private async Task<OrderStatus> ProcessWithdraw(long userId, decimal sum, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (sum < 0)
+            {
+                return OrderStatus.Insufficient_Funds;
+            }
+
+            await UpdateBalance(
+                userId: userId,
+                sum: -sum,
+                cancellation: cancellationToken
+            );
+            return OrderStatus.Finished;
+        }
+        catch (BalanceInsufficientFundsException)
+        {
+            return OrderStatus.Insufficient_Funds;
+        }
+        catch (EntityNotFoundException)
+        {
+            return OrderStatus.Balance_Not_Exists;
+        }
+        catch (Exception)
+        {
+            return OrderStatus.Failed;
+        }
     }
 
     private async Task UpdateBalance(long userId, decimal sum, CancellationToken cancellation)
@@ -96,7 +191,7 @@ public class BalanceAccountService : IBalanceAccountsService
             isForUpdate: false,
             cancellationToken: cancellation
         );
-        
+
         var affectedRows = await _balanceAccountRepository.CasUpdateBalance(
             userId: userId,
             curVersion: casEntity.Version,
@@ -106,8 +201,6 @@ public class BalanceAccountService : IBalanceAccountsService
 
         if (affectedRows == 0)
         {
-            using var transaction = _balanceAccountRepository.CreateTransactionScope();
-
             var lockedEntity = await _balanceAccountRepository.GetByUserId(
                 userId: userId,
                 isForUpdate: true,
@@ -126,8 +219,6 @@ public class BalanceAccountService : IBalanceAccountsService
                 amount: sum,
                 cancellation: cancellation
             );
-
-            transaction.Complete();
         }
     }
 

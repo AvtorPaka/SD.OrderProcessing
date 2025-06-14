@@ -2,30 +2,31 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using SD.OrderProcessing.Orders.Api.Extensions;
-using SD.OrderProcessing.Orders.Domain.Contracts.Dal.Entities;
-using SD.OrderProcessing.Orders.Domain.Contracts.Dal.Interfaces;
-using SD.OrderProcessing.Orders.Domain.Contracts.ISC.MessageQ.Messages;
-using SD.OrderProcessing.Orders.Infrastructure.Configuration.Options;
+using SD.OrderProcessing.Payment.Api.Extensions;
+using SD.OrderProcessing.Payment.Domain.Contracts.Dal.Entities;
+using SD.OrderProcessing.Payment.Domain.Contracts.Dal.Interfaces;
+using SD.OrderProcessing.Payment.Domain.Contracts.ISC.MessageQ.Messages;
+using SD.OrderProcessing.Payment.Infrastructure.Configuration.Options;
 
-namespace SD.OrderProcessing.Orders.Api.BackgroundServices;
+namespace SD.OrderProcessing.Payment.Api.BackgroundServices;
 
-public class OrderPaymentMessageProducer : BackgroundService
+public class PaymentStatusMessagesProducer : BackgroundService
 {
-    private const string OrderPaymentQueueName = "ord_pay_mq";
+    private const string PaymentStatusQueueName = "pay_status_mq";
     private const int MessagesPerProcessing = 50;
     private readonly IServiceProvider _serviceProvider;
     private readonly RabbitMqConnectionOptions _mqConnectionOptions;
-    private readonly ILogger<OrderPaymentMessageProducer> _logger;
+    private readonly ILogger<PaymentStatusMessagesProducer> _logger;
     private IConnection? _rmqConnection;
 
-    public OrderPaymentMessageProducer(
+    public PaymentStatusMessagesProducer(
         IServiceProvider serviceProvider,
-        IOptions<RabbitMqConnectionOptions> rmqConnectionOptions,
-        ILogger<OrderPaymentMessageProducer> logger)
+        IOptions<RabbitMqConnectionOptions> connectionOptions,
+        ILogger<PaymentStatusMessagesProducer> logger
+    )
     {
         _serviceProvider = serviceProvider;
-        _mqConnectionOptions = rmqConnectionOptions.Value;
+        _mqConnectionOptions = connectionOptions.Value;
         _logger = logger;
     }
 
@@ -33,7 +34,7 @@ public class OrderPaymentMessageProducer : BackgroundService
     {
         await InitializeRmqConnection(cancellationToken);
 
-        _logger.LogPaymentMessagesProducerStart(
+        _logger.LogPaymentStatusMessagesProducerStart(
             curTime: DateTime.UtcNow
         );
 
@@ -44,11 +45,11 @@ public class OrderPaymentMessageProducer : BackgroundService
             {
                 try
                 {
-                    await ProcessPaymentMessages(cancellationToken);
+                    await ProcessPaymentStatusMessages(cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogPaymentMessagesProducesUnexpectedException(
+                    _logger.LogPaymentStatusMessagesProducesUnexpectedException(
                         curTime: DateTime.UtcNow,
                         exception: ex
                     );
@@ -57,7 +58,7 @@ public class OrderPaymentMessageProducer : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogPaymentMessagesProducerEnd(
+            _logger.LogPaymentStatusMessagesProducerEnd(
                 curTime: DateTime.UtcNow
             );
         }
@@ -66,37 +67,37 @@ public class OrderPaymentMessageProducer : BackgroundService
             await CleanupResourcesAsync(cancellationToken);
         }
     }
-
-    private async Task ProcessPaymentMessages(CancellationToken cancellationToken)
+    
+    private async Task ProcessPaymentStatusMessages(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
 
-        IOrderPaymentMessagesRepository orderPaymentMessagesRepository =
-            scope.ServiceProvider.GetRequiredService<IOrderPaymentMessagesRepository>();
+        IPaymentStatusMessagesRepository paymentStatusMessagesRepository =
+            scope.ServiceProvider.GetRequiredService<IPaymentStatusMessagesRepository>();
 
-        using var transaction = orderPaymentMessagesRepository.CreateTransactionScope();
+        using var transaction = paymentStatusMessagesRepository.CreateTransactionScope();
 
-        IReadOnlyList<OrderPaymentMessageEntity> paymentMessageEntities =
-            await orderPaymentMessagesRepository.GetPriorPendingMessagesToPublishAndUpdate(
+        IReadOnlyList<PaymentStatusMessageEntity> paymentMessageEntities =
+            await paymentStatusMessagesRepository.GetPriorPendingMessagesToUpdateAndPublish(
                 limit: MessagesPerProcessing,
                 cancellationToken: cancellationToken);
 
 
         if (paymentMessageEntities.Count != 0)
         {
-            _logger.LogPaymentMessagesProducerStartProcessing(
+            _logger.LogPaymentStatusMessagesProducerStartProcessing(
                 curTime: DateTime.UtcNow,
                 messagesAmount: paymentMessageEntities.Count
             );
 
             long[] successFullSentOrderIds = await PublishMessages(paymentMessageEntities, cancellationToken);
 
-            await orderPaymentMessagesRepository.MarkMessagesAsDone(
+            await paymentStatusMessagesRepository.MarkMessagesDone(
                 messagesIds: successFullSentOrderIds,
                 cancellationToken: cancellationToken
             );
 
-            _logger.LogPaymentMessagesProducerEndProcessing(
+            _logger.LogPaymentStatusMessagesProducerEndProcessing(
                 curTime: DateTime.UtcNow,
                 messagesAmount: paymentMessageEntities.Count
             );
@@ -105,7 +106,7 @@ public class OrderPaymentMessageProducer : BackgroundService
         transaction.Complete();
     }
 
-    private async Task<long[]> PublishMessages(IReadOnlyList<OrderPaymentMessageEntity> paymentMessageEntities,
+    private async Task<long[]> PublishMessages(IReadOnlyList<PaymentStatusMessageEntity> paymentStatusMessageEntities,
         CancellationToken cancellationToken)
     {
         await using var channel = await OpenChannelWithQueueAsync(cancellationToken);
@@ -119,22 +120,21 @@ public class OrderPaymentMessageProducer : BackgroundService
             Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
         };
 
-        foreach (var messageEntity in paymentMessageEntities)
+        foreach (var messageEntity in paymentStatusMessageEntities)
         {
             try
             {
                 messageProps.MessageId = messageEntity.Id.ToString();
 
-                var rawJsonMessage = JsonSerializer.Serialize(new OrderPaymentMessage(
-                    UserId: messageEntity.UserId,
+                var rawJsonMessage = JsonSerializer.Serialize(new PaymentStatusMessage(
                     OrderId: messageEntity.OrderId,
-                    Amount: messageEntity.Amount
+                    Status: messageEntity.OrderStatus
                 ));
                 var messageBody = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(rawJsonMessage));
 
                 await channel.BasicPublishAsync(
                     exchange: string.Empty,
-                    routingKey: OrderPaymentQueueName,
+                    routingKey: PaymentStatusQueueName,
                     mandatory: true,
                     basicProperties: messageProps,
                     body: messageBody,
@@ -145,7 +145,7 @@ public class OrderPaymentMessageProducer : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogPaymentMessagesProducerInvalidPublish(
+                _logger.LogPaymentStatusMessagesProducerInvalidPublish(
                     curTime: DateTime.UtcNow,
                     exception: ex,
                     messageId: messageEntity.Id
@@ -185,7 +185,7 @@ public class OrderPaymentMessageProducer : BackgroundService
         IChannel rmqChannel = await _rmqConnection!.CreateChannelAsync(channelOptions, cancellationToken);
 
         await rmqChannel.QueueDeclareAsync(
-            queue: OrderPaymentQueueName,
+            queue: PaymentStatusQueueName,
             durable: true,
             exclusive: false,
             autoDelete: false,

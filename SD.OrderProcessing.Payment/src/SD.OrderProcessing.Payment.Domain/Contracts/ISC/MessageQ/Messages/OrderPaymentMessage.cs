@@ -1,4 +1,4 @@
-namespace SD.OrderProcessing.Orders.Domain.Contracts.ISC.MessageQ.Messages;
+namespace SD.OrderProcessing.Payment.Domain.Contracts.ISC.MessageQ.Messages;
 
 public record OrderPaymentMessage(
     long OrderId,
