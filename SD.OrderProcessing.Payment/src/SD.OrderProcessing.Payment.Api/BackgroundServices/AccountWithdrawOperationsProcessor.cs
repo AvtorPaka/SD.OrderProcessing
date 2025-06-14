@@ -40,10 +40,7 @@ public class AccountWithdrawOperationsProcessor : BackgroundService
 
     private async Task ProcessPaymentOperations(CancellationToken cancellationToken)
     {
-        _logger.LogWithdrawOperationsProcessorStartProcessing(
-            curTime: DateTime.UtcNow
-        );
-
+        
         await using var scope = _serviceProvider.CreateAsyncScope();
 
         IBalanceAccountsService balanceAccountsService =
@@ -63,9 +60,5 @@ public class AccountWithdrawOperationsProcessor : BackgroundService
                 exception: ex
             );
         }
-
-        _logger.LogWithdrawOperationsProcessorStopProcessing(
-            curTime: DateTime.UtcNow
-        );
     }
 }

@@ -1,0 +1,104 @@
+services:
+  sd_op_orders_api:
+    build:
+      context: ../SD.OrderProcessing.Orders/
+      dockerfile: Dockerfile
+      args:
+        TARGETARCH: ${BUILD_ARCH}
+    platform: ${BUILD_PLATFORM}
+    container_name: sd-op-orders
+    image: sd.op.orders:1.0
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - DOTNET_EnableWriteXorExecute=0
+      - DOTNET_NUGET_SIGNATURE_VERIFICATION=false
+    networks:
+      - sd-op-network
+    depends_on:
+      - sd_op_db
+      - sd_op_rmq
+
+  sd_op_payment_api:
+    build:
+      context: ../SD.OrderProcessing.Payment/
+      dockerfile: Dockerfile
+      args:
+        TARGETARCH: ${BUILD_ARCH}
+    platform: ${BUILD_PLATFORM}
+    container_name: sd-op-payment
+    image: sd.op.payment:1.0
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - DOTNET_EnableWriteXorExecute=0
+      - DOTNET_NUGET_SIGNATURE_VERIFICATION=false
+    networks:
+      - sd-op-network
+    depends_on:
+      - sd_op_db
+      - sd_op_rmq
+
+  sd_op_api_gateway:
+    image: nginx:1.28-alpine
+    container_name: sd-op-gateway
+    restart: always
+    volumes:
+      - ../SD.OrderProcessing.Gateway/nginx.conf.template:/etc/nginx/templates/default.conf.template
+    environment:
+      - PAYMENT_API_URL=${SD_OP_P_URL}
+      - ORDERS_API_URL=${SD_OP_O_URL}
+    ports:
+      - ${SD_OP_GATEWAY_PORT}:80
+    networks:
+      - sd-op-network
+    depends_on:
+      - sd_op_payment_api
+      - sd_op_orders_api
+
+  sd_op_rmq:
+    image: rabbitmq:4.1-management-alpine
+    container_name: sd-op-rmq
+    restart: always
+    volumes:
+      - sd-op-rmq-data:/var/lib/rabbitmq
+      - sd-op-rmq-log-data:/var/log/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RMQ_PSWD}
+    ports:
+      - 15672:15672
+    networks:
+      - sd-op-network
+    
+  sd_op_db:
+    image: postgres:latest
+    container_name: sd-op-pg
+    restart: always
+    shm_size: 128mb
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PSWD}
+    volumes:
+      - sd-op-pg-data:/var/lib/postgresql/data
+      - ./init_sql:/docker-entrypoint-initdb.d
+    networks:
+      - sd-op-network
+    
+        
+volumes:
+  sd-op-pg-data:
+    driver: local
+  sd-op-rmq-data:
+    driver: local
+  sd-op-rmq-log-data:
+    driver: local
+
+
+networks:
+  sd-op-network:
+    driver: bridge

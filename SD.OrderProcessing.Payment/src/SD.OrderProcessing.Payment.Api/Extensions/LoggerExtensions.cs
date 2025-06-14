@@ -43,22 +43,6 @@ public static partial class LoggerExtensions
     
     [LoggerMessage(
         LogLevel.Information,
-        EventId = 2004,
-        Message = "[{CurTime}] Withdraw payment operations processor start processing payments."
-    )]
-    public static partial void LogWithdrawOperationsProcessorStartProcessing(this ILogger logger,
-        DateTime curTime);
-    
-    [LoggerMessage(
-        LogLevel.Information,
-        EventId = 2005,
-        Message = "[{CurTime}] Withdraw payment operations processor ended processing payments."
-    )]
-    public static partial void LogWithdrawOperationsProcessorStopProcessing(this ILogger logger,
-        DateTime curTime);
-    
-    [LoggerMessage(
-        LogLevel.Information,
         EventId = 2006,
         Message = "[{CurTime}] Order Payment Status messages producer start executing."
     )]

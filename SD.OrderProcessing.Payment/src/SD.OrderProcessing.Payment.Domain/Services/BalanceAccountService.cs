@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SD.OrderProcessing.Payment.Domain.Contracts.Dal.Entities;
 using SD.OrderProcessing.Payment.Domain.Contracts.Dal.Interfaces;
 using SD.OrderProcessing.Payment.Domain.Exceptions.Domain.BalanceAccount;
@@ -13,16 +14,19 @@ public class BalanceAccountService : IBalanceAccountsService
     private readonly IBalanceAccountRepository _balanceAccountRepository;
     private readonly IBalanceWithdrawUpdatesRepository _balanceWithdrawUpdatesRepository;
     private readonly IPaymentStatusMessagesRepository _paymentStatusMessagesRepository;
+    private readonly ILogger<BalanceAccountService> _logger;
 
     public BalanceAccountService(
         IBalanceAccountRepository balanceAccountRepository,
         IBalanceWithdrawUpdatesRepository balanceWithdrawUpdatesRepository,
-        IPaymentStatusMessagesRepository paymentStatusMessagesRepository
+        IPaymentStatusMessagesRepository paymentStatusMessagesRepository,
+        ILogger<BalanceAccountService> logger
     )
     {
         _balanceAccountRepository = balanceAccountRepository;
         _balanceWithdrawUpdatesRepository = balanceWithdrawUpdatesRepository;
         _paymentStatusMessagesRepository = paymentStatusMessagesRepository;
+        _logger = logger;
     }
 
     public async Task<BalanceAccountModel> CreateNew(long userId, CancellationToken cancellationToken)
@@ -119,9 +123,13 @@ public class BalanceAccountService : IBalanceAccountsService
         {
             return;
         }
-        
+
+        _logger.LogInformation(
+            "[{CurTime}] Withdraw payment operations processor start processing: {numberOfPayments} payments.",
+            DateTime.UtcNow, withdrawOperations.Count);
+
         using var transaction = _balanceWithdrawUpdatesRepository.CreateTransactionScope();
-        
+
         List<PaymentStatusMessageEntity> paymentStatusMessages = [];
 
         foreach (var withdraw in withdrawOperations)
@@ -152,8 +160,12 @@ public class BalanceAccountService : IBalanceAccountsService
         );
 
         transaction.Complete();
+        
+        _logger.LogInformation(
+            "[{CurTime}] Withdraw payment operations processor ended processing: {numberOfPayments} payments.",
+            DateTime.UtcNow, withdrawOperations.Count);
     }
-    
+
     private async Task<OrderStatus> ProcessWithdraw(long userId, decimal sum, CancellationToken cancellationToken)
     {
         try

@@ -66,7 +66,7 @@ public class OrderPaymentMessageConsumer : BackgroundService
 
                         }
                     }
-                    catch (EntityAlreadyExistsException ex)
+                    catch (EntityAlreadyExistsException)
                     {
                         _logger.LogOrderPaymentConsumerPaymentAlreadyPersist(
                             curTime: DateTime.UtcNow
